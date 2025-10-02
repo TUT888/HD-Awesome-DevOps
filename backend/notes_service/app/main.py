@@ -1,3 +1,9 @@
+"""
+Notes Service API.
+
+FastAPI application for managing notes in a multi-user note-taking platform.
+"""
+
 import logging
 import sys
 import time
@@ -51,6 +57,7 @@ app.add_middleware(
 # --- Startup Event ---
 @app.on_event("startup")
 async def startup_event():
+    """Initialize database connection on application startup."""
     max_retries = 10
     retry_delay_seconds = 5
     for i in range(max_retries):
@@ -86,27 +93,20 @@ async def startup_event():
 # --- Root Endpoint ---
 @app.get("/", status_code=status.HTTP_200_OK, summary="Root endpoint")
 async def read_root():
+    """Return welcome message."""
     return {"message": "Welcome to the Notes Service!"}
 
 
 # --- Health Check Endpoint ---
 @app.get("/health", status_code=status.HTTP_200_OK, summary="Health check")
 async def health_check():
+    """Health check endpoint for monitoring."""
     return {"status": "ok", "service": "notes-service"}
 
 
 # --- CRUD Endpoints ---
 # Create new note
 # [POST] http://localhost:8000/notes/
-"""
-{
-    "title": "Sample Note",
-    "content": "Sample ID",
-    "user_id": 1
-}
-"""
-
-
 @app.post(
     "/notes/",
     response_model=NoteResponse,
@@ -180,12 +180,6 @@ def get_note(note_id: int, db: Session = Depends(get_db)):
 
 # Update specific note by note_id
 # [PUT] http://localhost:8000/notes/{note_id}
-"""
-{
-    "title": "Sample Note",
-    "content": "Sample Updated Content"
-}
-"""
 
 
 @app.put(

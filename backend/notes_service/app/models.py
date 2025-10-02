@@ -1,3 +1,5 @@
+"""SQLAlchemy database models."""
+
 from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
 
@@ -5,6 +7,8 @@ from .db import Base
 
 
 class Note(Base):
+    """Note model for storing user notes."""
+
     __tablename__ = "notes"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)

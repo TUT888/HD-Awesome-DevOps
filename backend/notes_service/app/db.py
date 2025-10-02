@@ -1,3 +1,5 @@
+"""Database configuration and session management."""
+
 import os
 
 from sqlalchemy import create_engine
