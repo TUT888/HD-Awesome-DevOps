@@ -1,4 +1,5 @@
 """Integration tests for Users Service API."""
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.models import User
@@ -31,19 +32,17 @@ def test_create_user_success(client: TestClient, db_session_for_test: Session):
     assert "created_at" in data
 
     # Verify in database
-    db_user = (
-        db_session_for_test.query(User)
-        .filter(User.id == data["id"])
-        .first()
-    )
+    db_user = db_session_for_test.query(User).filter(User.id == data["id"]).first()
     assert db_user is not None
     assert db_user.username == test_data["username"]
 
 
-def test_create_user_duplicate_username(client: TestClient, db_session_for_test: Session):
+def test_create_user_duplicate_username(
+    client: TestClient, db_session_for_test: Session
+):
     """Test creating user with duplicate username."""
     test_data = {"username": "duplicate", "email": "user1@example.com"}
-    
+
     # Create first user
     response1 = client.post("/users/", json=test_data)
     assert response1.status_code == 201
@@ -58,7 +57,7 @@ def test_create_user_duplicate_username(client: TestClient, db_session_for_test:
 def test_create_user_duplicate_email(client: TestClient, db_session_for_test: Session):
     """Test creating user with duplicate email."""
     test_data = {"username": "user1", "email": "duplicate@example.com"}
-    
+
     # Create first user
     response1 = client.post("/users/", json=test_data)
     assert response1.status_code == 201
@@ -88,8 +87,7 @@ def test_get_user_success(client: TestClient, db_session_for_test: Session):
     """Test getting user by ID."""
     # Create user first
     create_response = client.post(
-        "/users/",
-        json={"username": "gettest", "email": "get@example.com"}
+        "/users/", json={"username": "gettest", "email": "get@example.com"}
     )
     user_id = create_response.json()["id"]
 

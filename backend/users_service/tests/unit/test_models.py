@@ -1,4 +1,5 @@
 """Unit tests for SQLAlchemy models."""
+
 from app.models import User
 
 

@@ -109,6 +109,8 @@ async def health_check():
     "email": "john@example.com"
 }
 """
+
+
 @app.post(
     "/users/",
     response_model=UserResponse,
@@ -124,8 +126,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         logger.warning(f"Users Service: Username {user.username} already exists")
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Username already exists"
+            status_code=status.HTTP_409_CONFLICT, detail="Username already exists"
         )
 
     # Check if email exists
@@ -133,8 +134,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if existing_email:
         logger.warning(f"Users Service: Email {user.email} already exists")
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists"
+            status_code=status.HTTP_409_CONFLICT, detail="Email already exists"
         )
 
     try:
@@ -170,8 +170,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     if not user:
         logger.warning(f"Users Service: User with ID {user_id} not found.")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     logger.info(f"Users Service: Retrieved user with ID {user_id}")

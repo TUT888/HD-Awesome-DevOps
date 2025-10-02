@@ -1,4 +1,5 @@
 """Unit tests for Pydantic schemas."""
+
 import pytest
 from pydantic import ValidationError
 from app.schemas import UserCreate
