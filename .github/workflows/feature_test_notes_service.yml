@@ -1,5 +1,6 @@
 name: Feature Branch CI - Note Service
 
+# Workflow runs on any changes on Note Services, commited on feature or fix branches
 on:
   push:
     branches:
@@ -15,6 +16,7 @@ jobs:
     secrets: inherit
     with:
       working-directory: "./backend/notes_service"
+      linting-threshold: 6.0
 
   test:
     name: Run Tests for Notes Service

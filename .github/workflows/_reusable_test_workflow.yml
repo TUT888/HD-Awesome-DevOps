@@ -3,6 +3,7 @@
 # - pytest-cov: test coverage
 name: Reusable Test Workflow
 
+# Workflow runs on being called by others
 on:
   workflow_call:
     inputs:

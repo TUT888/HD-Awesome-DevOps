@@ -1,9 +1,10 @@
 # Reusable quality check: 
-# - Black: Linting & format code
+# - black: Code format
 # - pylint: Code quality
 # - bandit: Security linting
 name: Reusable Quality Check Workflow
 
+# Workflow runs on being called by others
 on:
   workflow_call:
     inputs:
@@ -14,6 +15,10 @@ on:
         required: false
         type: string
         default: "3.10"
+      linting-threshold:
+        required: false
+        type: number
+        default: 8.0
 
 jobs:
   quality-check:
@@ -44,7 +49,7 @@ jobs:
       - name: Lint with Pylint
         working-directory: ${{ inputs.working-directory }}
         run: |
-          pylint app/ --fail-under=8.0
+          pylint app/ --fail-under=${{ inputs.linting-threshold }}
 
       - name: Security scan with Bandit
         working-directory: ${{ inputs.working-directory }}

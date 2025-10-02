@@ -1,6 +1,7 @@
 import logging
-import sys, os, time
-from typing import List, Optional
+import sys
+import time
+from typing import List
 
 from fastapi import (
     Depends,
