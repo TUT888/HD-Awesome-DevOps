@@ -65,7 +65,9 @@ async def startup_event():
         except OperationalError as e:
             logger.warning(f"Notes Service: Failed to connect to PostgreSQL: {e}")
             if i < max_retries - 1:
-                logger.info(f"Notes Service: Retrying in {retry_delay_seconds} seconds...")
+                logger.info(
+                    f"Notes Service: Retrying in {retry_delay_seconds} seconds..."
+                )
                 time.sleep(retry_delay_seconds)
             else:
                 logger.critical(
@@ -102,6 +104,8 @@ async def health_check():
     "user_id": 1
 }
 """
+
+
 @app.post(
     "/notes/",
     response_model=NoteResponse,
@@ -128,6 +132,7 @@ async def create_note(note: NoteCreate, db: Session = Depends(get_db)):
             detail="Could not create note.",
         )
 
+
 # Get all note for specific user
 # [GET] http://localhost:8000/notes/?user_id={user_id}
 @app.get(
@@ -143,9 +148,12 @@ def list_notes(
 ):
     """Retrieve all notes for a specific user"""
     logger.info(f"Notes Service: Listing notes for user {user_id}")
-    notes = db.query(Note).filter(Note.user_id == user_id).offset(skip).limit(limit).all()
+    notes = (
+        db.query(Note).filter(Note.user_id == user_id).offset(skip).limit(limit).all()
+    )
     logger.info(f"Notes Service: Retrieved {len(notes)} notes for user {user_id}")
     return notes
+
 
 # Get specific note by note_id
 # [GET] http://localhost:8000/notes/{note_id}
@@ -161,10 +169,13 @@ def get_note(note_id: int, db: Session = Depends(get_db)):
 
     if not note:
         logger.warning(f"Notes Service: Note with ID {note_id} not found.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Note not found"
+        )
 
     logger.info(f"Notes Service: Retrieved note with ID {note_id}")
     return note
+
 
 # Update specific note by note_id
 # [PUT] http://localhost:8000/notes/{note_id}
@@ -174,6 +185,8 @@ def get_note(note_id: int, db: Session = Depends(get_db)):
     "content": "Sample Updated Content"
 }
 """
+
+
 @app.put(
     "/notes/{note_id}",
     response_model=NoteResponse,
@@ -186,7 +199,9 @@ async def update_note(note_id: int, note: NoteUpdate, db: Session = Depends(get_
 
     if not db_note:
         logger.warning(f"Notes Service: Note with ID {note_id} not found for update.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Note not found"
+        )
 
     update_data = note.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -200,11 +215,14 @@ async def update_note(note_id: int, note: NoteUpdate, db: Session = Depends(get_
         return db_note
     except Exception as e:
         db.rollback()
-        logger.error(f"Notes Service: Error updating note {note_id}: {e}", exc_info=True)
+        logger.error(
+            f"Notes Service: Error updating note {note_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not update note.",
         )
+
 
 # Delete specific note by note_id
 # [DELETE] http://localhost:8000/notes/{note_id}
@@ -220,7 +238,9 @@ def delete_note(note_id: int, db: Session = Depends(get_db)):
 
     if not note:
         logger.warning(f"Notes Service: Note with ID {note_id} not found for deletion.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Note not found"
+        )
 
     try:
         db.delete(note)
@@ -228,7 +248,9 @@ def delete_note(note_id: int, db: Session = Depends(get_db)):
         logger.info(f"Notes Service: Note {note_id} deleted successfully.")
     except Exception as e:
         db.rollback()
-        logger.error(f"Notes Service: Error deleting note {note_id}: {e}", exc_info=True)
+        logger.error(
+            f"Notes Service: Error deleting note {note_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not delete note.",

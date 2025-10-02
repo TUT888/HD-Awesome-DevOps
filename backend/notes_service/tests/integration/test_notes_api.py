@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+
 def test_read_root(client: TestClient):
     response = client.get("/")
     assert response.status_code == 200
@@ -27,7 +28,11 @@ def test_create_note_success(client: TestClient, db_session_for_test: Session):
 
 
 def test_create_note_invalid_user_id(client: TestClient):
-    invalid_data = {"title": "Invalid Note", "content": "Content", "user_id": -1}  # Invalid user_id
+    invalid_data = {
+        "title": "Invalid Note",
+        "content": "Content",
+        "user_id": -1,
+    }  # Invalid user_id
     response = client.post("/notes/", json=invalid_data)
     assert response.status_code == 422
 
@@ -71,7 +76,8 @@ def test_get_note_not_found(client: TestClient):
 def test_update_note_partial(client: TestClient, db_session_for_test: Session):
     # Create note
     create_resp = client.post(
-        "/notes/", json={"title": "Original", "content": "Original content", "user_id": 1}
+        "/notes/",
+        json={"title": "Original", "content": "Original content", "user_id": 1},
     )
     note_id = create_resp.json()["id"]
 

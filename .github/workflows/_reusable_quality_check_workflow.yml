@@ -38,12 +38,15 @@ jobs:
 
       - name: Format check with Black
         working-directory: ${{ inputs.working-directory }}
-        run: black --check app/ tests/
+        run: |
+          black --check app/ tests/
 
       - name: Lint with Pylint
         working-directory: ${{ inputs.working-directory }}
-        run: pylint app/ --fail-under=8.0
+        run: |
+          pylint app/ --fail-under=8.0
 
       - name: Security scan with Bandit
         working-directory: ${{ inputs.working-directory }}
-        run: bandit -r app/ -ll
+        run: |
+          bandit -r app/ -ll

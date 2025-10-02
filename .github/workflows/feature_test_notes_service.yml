@@ -10,12 +10,14 @@ on:
 
 jobs:
   quality-checks:
+    name: Quality Check for Notes Service
     uses: ./.github/workflows/_reusable_quality_check_workflow.yml
     secrets: inherit
     with:
       working-directory: "./backend/notes_service"
 
-  unit-test:
+  test:
+    name: Run Tests for Notes Service
     uses: ./.github/workflows/_reusable_test_workflow.yml
     secrets: inherit
     with:
