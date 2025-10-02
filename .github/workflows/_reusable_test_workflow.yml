@@ -1,0 +1,77 @@
+# Reusable test workflow
+# - pytest: run all defined test files in tests/
+# - pytest-cov: test coverage
+name: Reusable Test Workflow
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      python-version:
+        required: false
+        type: string
+        default: "3.10"
+      coverage-threshold:
+        required: false
+        type: number
+        default: 80
+
+env:
+  POSTGRES_HOST: localhost
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: test_db
+
+jobs:
+  test:
+    name: Unit Testing and Code Coverage Check
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ env.POSTGRES_HOST }}
+          POSTGRES_PORT: 5432
+        run: |
+          pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Check coverage
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          coverage report --fail-under=${{ inputs.coverage-threshold }}

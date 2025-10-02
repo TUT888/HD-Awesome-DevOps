@@ -1,0 +1,23 @@
+name: Feature Branch CI - Note Service
+
+on:
+  push:
+    branches:
+      - "feature/**"
+      - "fix/**"
+    paths: 
+      - "backend/notes_service/**"
+
+jobs:
+  quality-checks:
+    uses: ./.github/workflows/_reusable_quality_check_workflow.yml
+    secrets: inherit
+    with:
+      working-directory: "./backend/notes_service"
+
+  unit-test:
+    uses: ./.github/workflows/_reusable_test_workflow.yml
+    secrets: inherit
+    with:
+      working-directory: "./backend/notes_service"
+      coverage-threshold: 80

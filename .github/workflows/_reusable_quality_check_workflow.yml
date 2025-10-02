@@ -1,0 +1,49 @@
+# Reusable quality check: 
+# - Black: Linting & format code
+# - pylint: Code quality
+# - bandit: Security linting
+name: Reusable Quality Check Workflow
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      python-version:
+        required: false
+        type: string
+        default: "3.10"
+
+jobs:
+  quality-check:
+    name: Code Quality and Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Format check with Black
+        working-directory: ${{ inputs.working-directory }}
+        run: black --check app/ tests/
+
+      - name: Lint with Pylint
+        working-directory: ${{ inputs.working-directory }}
+        run: pylint app/ --fail-under=8.0
+
+      - name: Security scan with Bandit
+        working-directory: ${{ inputs.working-directory }}
+        run: bandit -r app/ -ll
