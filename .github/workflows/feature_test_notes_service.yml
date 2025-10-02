@@ -16,7 +16,7 @@ jobs:
     secrets: inherit
     with:
       working-directory: "./backend/notes_service"
-      linting-threshold: 6.0
+      linting-threshold: 8.0
 
   test:
     name: Run Tests for Notes Service

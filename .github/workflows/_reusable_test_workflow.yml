@@ -26,9 +26,56 @@ env:
   POSTGRES_DB: test_db
 
 jobs:
-  test:
-    name: Testing and Code Coverage Check
+  unit-test:
+    name: Run Unit Testing (schemas, basic logic)
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          pytest tests/unit/ -v --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload unit test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage
+          path: ${{ inputs.working-directory }}/coverage.xml
+
+  integration-test:
+    name: Run Integration Testing (API + database)
+    runs-on: ubuntu-latest
+    needs: unit-test
     
     services:
       postgres:
@@ -70,9 +117,45 @@ jobs:
           POSTGRES_HOST: ${{ env.POSTGRES_HOST }}
           POSTGRES_PORT: 5432
         run: |
-          pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
+          pytest tests/integration/ -v --cov=app --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload integration coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage
+          path: ${{ inputs.working-directory }}/coverage.xml
 
-      - name: Check coverage
+  coverage-report:
+    name: Combined Coverage Check
+    runs-on: ubuntu-latest
+    needs: [unit-test, integration-test]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install coverage
+        run: pip install coverage
+
+      - name: Download unit coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-coverage
+          path: ./coverage-unit
+
+      - name: Download integration coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: integration-coverage
+          path: ./coverage-integration
+          
+      - name: Check combined coverage
         working-directory: ${{ inputs.working-directory }}
         run: |
+          coverage combine ../coverage-unit/.coverage ../coverage-integration/.coverage
           coverage report --fail-under=${{ inputs.coverage-threshold }}
