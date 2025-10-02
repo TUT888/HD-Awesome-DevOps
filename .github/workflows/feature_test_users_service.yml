@@ -1,4 +1,4 @@
-name: Feature Branch CI - Note Service
+name: Feature Branch CI - User Service
 
 # Workflow runs on any changes on Note Services, commited on feature or fix branches
 on:
@@ -7,16 +7,16 @@ on:
       - "feature/**"
       - "fix/**"
     paths: 
-      - "backend/notes_service/**"
-      - ".github/workflows/*notes_service*.yml"
+      - "backend/users_service/**"
+      - ".github/workflows/*users_service*.yml"
 
 jobs:
   quality-checks:
-    name: Quality Check for Notes Service
+    name: Quality Check for Users Service
     uses: ./.github/workflows/_reusable_quality_check_workflow.yml
     secrets: inherit
     with:
-      working-directory: "./backend/notes_service"
+      working-directory: "./backend/users_service"
       linting-threshold: 8.0
 
   test:
@@ -24,5 +24,5 @@ jobs:
     uses: ./.github/workflows/_reusable_test_workflow.yml
     secrets: inherit
     with:
-      working-directory: "./backend/notes_service"
+      working-directory: "./backend/users_service"
       coverage-threshold: 80
