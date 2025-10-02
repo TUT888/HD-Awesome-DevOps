@@ -2,12 +2,15 @@ name: Feature Branch CI - Note Service
 
 # Workflow runs on any changes on Note Services, commited on feature or fix branches
 on:
+  workflow_dispatch:
+    
   push:
     branches:
       - "feature/**"
       - "fix/**"
     paths: 
       - "backend/notes_service/**"
+      - ".github/workflows/*notes_service*.yml"
 
 jobs:
   quality-checks:
