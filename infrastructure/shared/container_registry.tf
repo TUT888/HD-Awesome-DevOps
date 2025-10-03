@@ -1,0 +1,14 @@
+# infrastructure/shared/container_registry.tf
+
+resource "azurerm_container_registry" "acr" {
+  name                = "${var.prefix}acr"
+  resource_group_name = azurerm_resource_group.shared_rg.name
+  location            = var.location
+  sku                 = "Basic"
+  admin_enabled       = true
+
+  tags = {
+    Environment = "Shared"
+    ManagedBy   = "Terraform"
+  }
+}
