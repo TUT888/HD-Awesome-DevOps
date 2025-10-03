@@ -1,7 +1,10 @@
 name: Feature Branch CI - User Service
 
-# Workflow runs on any changes on Note Services, commited on feature or fix branches
 on:
+  # Manual trigger
+  workflow_dispatch:
+    
+  # Workflow runs on any changes on Users Service, commited on feature or fix branches
   push:
     branches:
       - "feature/**"
@@ -9,6 +12,11 @@ on:
     paths: 
       - "backend/users_service/**"
       - ".github/workflows/*users_service*.yml"
+  
+  # Re-run the test when the new PR to develop is created
+  pull_request:
+    branches:
+      - "develop"
 
 jobs:
   quality-checks:
