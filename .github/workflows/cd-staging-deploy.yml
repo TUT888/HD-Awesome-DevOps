@@ -45,6 +45,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+      
       # Get image tag with Git SHA, start building and scanning images
       - name: Set variables (Short Git SHA and Image tag)
         id: vars
@@ -64,27 +70,21 @@ jobs:
 
           # Set image names as GitHub env variables, allowing internal reference within the same job
           echo "NOTES_SERVICE_IMAGE=$NOTES_SERVICE_IMAGE" >> $GITHUB_ENV
-          echo "NOTES_SERVICE_IMAGE=$USERS_SERVICE_IMAGE" >> $GITHUB_ENV
+          echo "USERS_SERVICE_IMAGE=$USERS_SERVICE_IMAGE" >> $GITHUB_ENV
 
       - name: Scan Backend Images
         run: |
-          echo "Scanning Notes Service Image..."
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 ${{ env.IMAGE_SECURITY_GATE }} \
-            $NOTES_SERVICE_IMAGE
-
-          echo "Scanning Users Service Image..."
+          echo "Scanning Notes Service Image: ${{ env.NOTES_SERVICE_IMAGE }}..."
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code ${{ env.IMAGE_SECURITY_GATE }} \
-            $USERS_SERVICE_IMAGE
+            ${{ env.NOTES_SERVICE_IMAGE }}
+
+          echo "Scanning Users Service Image: ${{ env.USERS_SERVICE_IMAGE }}..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code ${{ env.IMAGE_SECURITY_GATE }} \
+            ${{ env.USERS_SERVICE_IMAGE }}
           
       # All check passed, start pushing images to ACR
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          enable-AzPSSession: true
-      
       - name: Log in to ACR
         run: |
           az acr login --name ${{ env.SHARED_ACR_LOGIN_SERVER }}
