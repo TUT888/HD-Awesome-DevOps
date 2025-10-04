@@ -6,3 +6,4 @@ python-multipart
 pydantic
 azure-storage-blob
 aio-pika
+setuptools>=78.1.1

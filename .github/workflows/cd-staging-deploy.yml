@@ -24,10 +24,15 @@ env:
   AKS_CLUSTER_STAGING: sit722alice-staging-aks
   AZURE_LOCATION: australiaeast
 
+  # Image Scan with Trivy
+  # 1: Fail the build, stop the job if vulnerabilities found
+  # 0: Don't fail the build, just report security scan result (for learning purpose, I'll use this option)
+  IMAGE_SECURITY_GATE: 0
+
 jobs:
   # Build images
   build-images:
-    name: Build Docker images for all services
+    name: Build and Scan images for all services
     runs-on: ubuntu-latest
     
     outputs:
@@ -40,16 +45,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          enable-AzPSSession: true
-      
-      - name: Log in to ACR
-        run: |
-          az acr login --name ${{ env.SHARED_ACR_LOGIN_SERVER }}
-      
+      # Get image tag with Git SHA, start building and scanning images
       - name: Set variables (Short Git SHA and Image tag)
         id: vars
         run: |
@@ -57,55 +53,32 @@ jobs:
           echo "IMAGE_TAG=staging-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build Backend Images
-        id: backend_images
         run: |
+          # Set image name based on Git SHA
           NOTES_SERVICE_IMAGE="notes_service:${{ steps.vars.outputs.IMAGE_TAG }}"
           USERS_SERVICE_IMAGE="users_service:${{ steps.vars.outputs.IMAGE_TAG }}"
 
-          docker build -t ${{ env.SHARED_ACR_LOGIN_SERVER }}/$NOTES_SERVICE_IMAGE ./backend/notes_service
-          docker build -t ${{ env.SHARED_ACR_LOGIN_SERVER }}/$USERS_SERVICE_IMAGE ./backend/users_service
+          # Build local images for scanning
+          docker build -t $NOTES_SERVICE_IMAGE ./backend/notes_service
+          docker build -t $USERS_SERVICE_IMAGE ./backend/users_service
 
-          echo "notes_service_image=$NOTES_SERVICE_IMAGE" >> $GITHUB_OUTPUT
-          echo "users_service_image=$USERS_SERVICE_IMAGE" >> $GITHUB_OUTPUT
-  
-  # Image Vulnerability Scan with Trivy 
-  security-scan:
-    name: Image Vulnerability scan with Trivy
-    runs-on: ubuntu-latest
-    needs: build-images
-    
-    # Matrix strategy defining the images to be scan
-    strategy:
-      matrix:
-        service:
-          - name: Notes Service
-            image_with_tag: ${{ needs.build-images.outputs.NOTES_SERVICE_IMAGE }}
-          - name: Users Service
-            image_with_tag: ${{ needs.build-images.outputs.USERS_SERVICE_IMAGE }}
-    
-    steps:
-      - name: Trivy security scan on ${{ matrix.service.name }}
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ matrix.service.image_with_tag }}
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-      
-      - name: Security check passed
+          # Set image names as GitHub env variables, allowing internal reference within the same job
+          echo "NOTES_SERVICE_IMAGE=$NOTES_SERVICE_IMAGE" >> $GITHUB_ENV
+          echo "NOTES_SERVICE_IMAGE=$USERS_SERVICE_IMAGE" >> $GITHUB_ENV
+
+      - name: Scan Backend Images
         run: |
-          echo "${{ matrix.service.name }} passed security scan"
-          echo "Safe to push to registry"
+          echo "Scanning Notes Service Image..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 ${{ env.IMAGE_SECURITY_GATE }} \
+            $NOTES_SERVICE_IMAGE
 
-  # Push ONLY if security scan passes
-  push-images:
-    name: Push Images to shared ACR
-    runs-on: ubuntu-latest
-    needs: [build-images, security-scan]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
+          echo "Scanning Users Service Image..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code ${{ env.IMAGE_SECURITY_GATE }} \
+            $USERS_SERVICE_IMAGE
+          
+      # All check passed, start pushing images to ACR
       - name: Log in to Azure
         uses: azure/login@v1
         with:
@@ -116,16 +89,26 @@ jobs:
         run: |
           az acr login --name ${{ env.SHARED_ACR_LOGIN_SERVER }}
 
-      - name: Push All Images to ACR
+      - name: Tag and Push Images
+        id: backend_images
         run: |
-          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.NOTES_SERVICE_IMAGE }}
-          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.USERS_SERVICE_IMAGE }}
+          # Tag images
+          docker tag $NOTES_SERVICE_IMAGE ${{ env.SHARED_ACR_LOGIN_SERVER }}/$NOTES_SERVICE_IMAGE
+          docker tag $USERS_SERVICE_IMAGE ${{ env.SHARED_ACR_LOGIN_SERVER }}/$USERS_SERVICE_IMAGE
+
+          # Push images
+          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/$NOTES_SERVICE_IMAGE
+          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/$USERS_SERVICE_IMAGE
+
+          # Export image name (with tag) as output
+          echo "notes_service_image=$NOTES_SERVICE_IMAGE" >> $GITHUB_OUTPUT
+          echo "users_service_image=$USERS_SERVICE_IMAGE" >> $GITHUB_OUTPUT
 
   # Provision staging infrastructure with OpenTofu
   provision-infrastructure:
     name: Provision staging infrastructure with OpenTofu
     runs-on: ubuntu-latest
-    needs: [build-images, security-scan]
+    needs: build-images
     
     defaults:
       run:
