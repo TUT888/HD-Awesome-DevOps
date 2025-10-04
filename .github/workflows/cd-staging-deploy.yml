@@ -4,15 +4,17 @@ on:
   # Manual trigger
   workflow_dispatch:
 
+
   # Run the workflow when the new PR to develop is approved and merged
   push:
     branches:
       - develop
     paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'k8s/staging/**'
-      - 'infrastructure/staging/**'
+      - "backend/**"
+      - "frontend/**"
+      - "k8s/staging/**"
+      - ".github/workflows/**"
+      - "infrastructure/staging/**"
 
 env:
   SHARED_ACR_LOGIN_SERVER: ${{ secrets.SHARED_ACR_LOGIN_SERVER }}
