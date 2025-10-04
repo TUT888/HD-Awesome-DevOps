@@ -7,3 +7,4 @@ pydantic
 azure-storage-blob
 aio-pika
 pydantic[email]
+setuptools>=78.1.1
