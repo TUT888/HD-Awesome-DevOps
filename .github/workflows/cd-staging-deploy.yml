@@ -16,6 +16,7 @@ on:
 
 env:
   SHARED_ACR_LOGIN_SERVER: ${{ secrets.SHARED_ACR_LOGIN_SERVER }}
+  SHARED_ACR_NAME: ${{ secrets.SHARED_ACR_NAME }}
 
   RESOURCE_GROUP_STAGING: sit722alice-staging-rg
   AKS_CLUSTER_STAGING: sit722alice-staging-aks
@@ -53,7 +54,7 @@ jobs:
           echo "GIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=staging-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Build Backend Images (Notes Service)
+      - name: Build Backend Images
         id: backend_images
         run: |
           NOTES_SERVICE_IMAGE="notes_service:${{ steps.vars.outputs.IMAGE_TAG }}"
@@ -61,9 +62,9 @@ jobs:
 
           docker build -t ${{ env.SHARED_ACR_LOGIN_SERVER }}/$NOTES_SERVICE_IMAGE ./backend/notes_service
           docker build -t ${{ env.SHARED_ACR_LOGIN_SERVER }}/$USERS_SERVICE_IMAGE ./backend/users_service
-          
-          echo "notes_service=$NOTES_SERVICE_IMAGE" >> $GITHUB_OUTPUT
-          echo "users_service=$USERS_SERVICE_IMAGE" >> $GITHUB_OUTPUT
+
+          echo "notes_service_image=$NOTES_SERVICE_IMAGE" >> $GITHUB_OUTPUT
+          echo "users_service_image=$USERS_SERVICE_IMAGE" >> $GITHUB_OUTPUT
   
   # Image Vulnerability Scan with Trivy 
   security-scan:
