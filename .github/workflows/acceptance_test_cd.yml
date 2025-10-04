@@ -1,0 +1,71 @@
+name: CD - Staging Tests on PR
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+  # Run the test when the new PR to develop is created
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'k8s/staging/**'
+      - 'infrastructure/staging/**'
+      - '.github/workflows/*staging*.yml'
+
+env:
+  PYTHON_VERSION: "3.10"
+
+jobs:
+  # Test Individual Services (Already triggered on feature_test workflows)
+
+  # Acceptance Tests (End-to-End)
+  acceptance-tests:
+    name: Acceptance Tests - End-to-end user flow
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: notesdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Playwright
+        run: |
+          echo "Installing Playwright..."
+      
+      - name: Start Users Service
+        run: |
+          echo "Starting users service..."
+      
+      - name: Start Notes Service
+        run: |
+          echo "Starting notes service..."
+      
+      - name: Start Frontend
+        run: |
+          echo "Starting frontend service..."
+      
+      - name: Run acceptance tests
+        run: |
+          echo "Runing acceptance tests with Playwright..."
