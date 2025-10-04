@@ -4,7 +4,7 @@ services:
   notes-service:
     build: ./backend/notes_service
     ports:
-      - "8881:8000"
+      - "5001:8000"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -32,7 +32,7 @@ services:
   users-service:
     build: ./backend/users_service
     ports:
-      - "8880:8000"
+      - "5000:8000"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

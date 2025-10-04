@@ -16,19 +16,19 @@ spec:
         app: frontend
     spec:
       containers:
-        - name: frontend-container
-          image: sit722aliceacr.azurecr.io/_IMAGE_NAME_WITH_TAG_
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 80 # Nginx runs on port 80 inside the container
-          restartPolicy: Always
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
+      - name: frontend-container
+        image: _IMAGE_NAME_WITH_TAG_ # Placeholder for sit722aliceacr.azurecr.io/users_service:<tag-name>
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 80 # Nginx runs on port 80 inside the container
+      restartPolicy: Always
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "250m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
