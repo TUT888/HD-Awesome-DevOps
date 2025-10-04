@@ -5,15 +5,15 @@ on:
   workflow_dispatch:
 
   # Run the test when the new PR to develop is created
-  pull_request:
-    branches:
-      - develop
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'k8s/staging/**'
-      - 'infrastructure/staging/**'
-      - '.github/workflows/*staging*.yml'
+  # pull_request:
+  #   branches:
+  #     - develop
+  #   paths:
+  #     - 'backend/**'
+  #     - 'frontend/**'
+  #     - 'k8s/staging/**'
+  #     - 'infrastructure/staging/**'
+  #     - '.github/workflows/*staging*.yml'
 
 env:
   PYTHON_VERSION: "3.10"
