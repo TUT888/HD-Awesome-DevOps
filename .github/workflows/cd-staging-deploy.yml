@@ -177,7 +177,8 @@ jobs:
         run: |
           kubectl apply -f k8s/staging/configmaps.yaml
           kubectl apply -f k8s/staging/secrets.yaml
-          kubectl apply -f k8s/staging/postgres-deployment.yaml
+          kubectl apply -f k8s/staging/notes-db-deployment.yaml
+          kubectl apply -f k8s/staging/users-db-deployment.yaml
       
       - name: Deploy Backend Microservices
         run: |
@@ -191,6 +192,8 @@ jobs:
           kubectl apply -f k8s/staging/notes-service-deployment.yaml
 
       - name: Wait for Backend LoadBalancer IPs
+        env:
+          ENVIRONMENT: staging
         run: |
           chmod +x .github/scripts/get_backend_ip.sh
           ./.github/scripts/get_backend_ip.sh
@@ -213,13 +216,14 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run smoke tests
+        env:
+          NOTES_SERVICE_IP: ${{ needs.deploy-to-staging.outputs.NOTES_SERVICE_IP }}
+          NOTES_SERVICE_PORT: ${{ needs.deploy-to-staging.outputs.NOTES_SERVICE_PORT }}
+          USERS_SERVICE_IP: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}
+          USERS_SERVICE_PORT: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }}
         run: |
           chmod +x ./scripts/smoke-tests.sh
-          ./scripts/smoke-tests.sh \
-            NOTES_SERVICE_IP=${{ needs.deploy-to-staging.outputs.NOTES_SERVICE_IP }} \
-            NOTES_SERVICE_PORT=${{ needs.deploy-to-staging.outputs.NOTES_SERVICE_PORT }} \
-            USERS_SERVICE_IP=${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }} \
-            USERS_SERVICE_PORT=${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }} \
+          ./scripts/smoke-tests.sh
 
   # Cleanup staging environment
   cleanup-staging:
