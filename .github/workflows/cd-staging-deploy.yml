@@ -112,7 +112,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: infrastructure/staging
+        working-directory: ./infrastructure/staging
     
     steps:
       - name: Checkout repository
@@ -222,8 +222,8 @@ jobs:
           USERS_SERVICE_IP: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}
           USERS_SERVICE_PORT: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }}
         run: |
-          chmod +x ./scripts/smoke-tests.sh
-          ./scripts/smoke-tests.sh
+          chmod +x .github/scripts/smoke-tests.sh
+          ./.github/scripts/smoke-tests.sh
 
   # Cleanup staging environment
   cleanup-staging:
@@ -233,9 +233,12 @@ jobs:
     
     defaults:
       run:
-        working-directory: infrastructure/staging
+        working-directory: ./infrastructure/staging
     
     steps:   
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: OpenTofu Init
         run: |
           echo "Init OpenTofu..."
