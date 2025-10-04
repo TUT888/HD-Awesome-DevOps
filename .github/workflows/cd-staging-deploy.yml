@@ -132,31 +132,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Provisioning Infrastructure
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: '1.6.0'
+      
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: OpenTofu Init
+        run: tofu init
+      
+      - name: OpenTofu Plan
         run: |
-          echo "Provisioning... placeholder during development..."
-          echo "Done."
-      # - name: Setup OpenTofu
-      #   uses: opentofu/setup-opentofu@v1
-      #   with:
-      #     tofu_version: '1.6.0'
+          tofu plan \
+            -var="git_sha={{ github.sha }}" \
+            -out=staging.tfplan
       
-      # - name: Log in to Azure
-      #   uses: azure/login@v1
-      #   with:
-      #     creds: {{ secrets.AZURE_CREDENTIALS }}
-      
-      # - name: OpenTofu Init
-      #   run: tofu init
-      
-      # - name: OpenTofu Plan
-      #   run: |
-      #     tofu plan \
-      #       -var="git_sha={{ github.sha }}" \
-      #       -out=staging.tfplan
-      
-      # - name: OpenTofu Apply
-      #   run: tofu apply -auto-approve staging.tfplan
+      - name: OpenTofu Apply
+        run: tofu apply -auto-approve staging.tfplan
 
   # Deploy services to staging AKS
   deploy-to-staging:
