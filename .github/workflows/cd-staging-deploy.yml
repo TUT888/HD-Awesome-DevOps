@@ -222,8 +222,8 @@ jobs:
           USERS_SERVICE_IP: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}
           USERS_SERVICE_PORT: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }}
         run: |
-          chmod +x .github/scripts/smoke-tests.sh
-          ./.github/scripts/smoke-tests.sh
+          chmod +x .github/scripts/smoke_tests.sh
+          ./.github/scripts/smoke_tests.sh
 
   # Cleanup staging environment
   cleanup-staging:
