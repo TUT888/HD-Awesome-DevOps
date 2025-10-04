@@ -16,7 +16,7 @@ spec:
         app: notes-service
     spec:ners:
       - name: notes-service-container
-        image: sit722aliceacr.azurecr.io/notes-service:staging-latest
+        image: sit722aliceacr.azurecr.io/_IMAGE_NAME_WITH_TAG_
         imagePullPolicy: Always
         ports:
         - containerPort: 5001

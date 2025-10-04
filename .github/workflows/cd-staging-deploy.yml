@@ -183,8 +183,8 @@ jobs:
         run: |
           # Update image tag in deployment manifest, using the specific git SHA version 
           echo "Updating image tag in deployment manifest..."
-          sed -i "s|staging-latest|${{ needs.build-images.outputs.IMAGE_TAG }}|g" k8s/staging/users-service-deployment.yaml
-          sed -i "s|staging-latest|${{ needs.build-images.outputs.IMAGE_TAG }}|g" k8s/staging/notes-service-deployment.yaml
+          sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ needs.build-images.outputs.NOTES_SERVICE_IMAGE }}|g" k8s/staging/notes-service-deployment.yaml
+          sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ needs.build-images.outputs.USERS_SERVICE_IMAGE }}|g" k8s/staging/users-service-deployment.yaml
 
           echo "Deploying backend services to AKS..."
           kubectl apply -f k8s/staging/users-service-deployment.yaml
