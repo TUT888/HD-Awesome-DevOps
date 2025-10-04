@@ -173,15 +173,11 @@ jobs:
             --name ${{ env.AKS_CLUSTER_STAGING }} \
             --overwrite-existing
       
-      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
-        run: |          
-          echo "Deploying Configmaps & Secrets..."
+      - name: Deploy Backend Infrastructure (ConfigMaps, Secrets, Databases)
+        run: |
           kubectl apply -f k8s/staging/configmaps.yaml
           kubectl apply -f k8s/staging/secrets.yaml
-
-          echo "Deploying Databases..."
           kubectl apply -f k8s/staging/postgres-deployment.yaml
-          kubectl wait --for=condition=ready pod -l app=postgres -n staging --timeout=300s
       
       - name: Deploy Backend Microservices
         run: |
@@ -192,9 +188,7 @@ jobs:
 
           echo "Deploying backend services to AKS..."
           kubectl apply -f k8s/staging/users-service-deployment.yaml
-          kubectl wait --for=condition=ready pod -l app=users-service -n staging --timeout=300s
           kubectl apply -f k8s/staging/notes-service-deployment.yaml
-          kubectl wait --for=condition=ready pod -l app=notes-service -n staging --timeout=300s
 
       - name: Wait for Backend LoadBalancer IPs
         run: |
