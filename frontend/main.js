@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // API endpoints - these will be replaced during deployment
-    const USERS_API_BASE_URL = '_USERS_API_URL_';
-    const NOTES_API_BASE_URL = '_NOTES_API_URL_';
+    // const USERS_API_BASE_URL = '_USERS_API_URL_';
+    // const NOTES_API_BASE_URL = '_NOTES_API_URL_';
+    const USERS_API_BASE_URL = 'http://localhost:5000';
+    const NOTES_API_BASE_URL = 'http://localhost:5001';
 
     // DOM Elements
     const messageBox = document.getElementById('message-box');

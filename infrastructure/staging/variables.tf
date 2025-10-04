@@ -9,7 +9,7 @@ variable "environment" {
 variable "prefix" {
   description = "Prefix for all resource names"
   type        = string
-  default     = "sit722alice"
+  default     = "sit722alicestd"
 }
 
 # Resource configuration variables

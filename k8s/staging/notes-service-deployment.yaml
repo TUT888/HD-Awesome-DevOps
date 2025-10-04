@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: notes-service-container
-          image: sit722aliceacr.azurecr.io/_IMAGE_NAME_WITH_TAG_
+          image: _IMAGE_NAME_WITH_TAG_ # Placeholder for sit722aliceacr.azurecr.io/users_service:<tag-name>
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
