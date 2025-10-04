@@ -17,8 +17,9 @@ spec:
     spec:
       containers:
         - name: users-service-container
-          image: sit722aliceacr.azurecr.io/_IMAGE_NAME_WITH_TAG_
-          imagePullPolicy: Never
+          # image: sit722aliceacr.azurecr.io/_IMAGE_NAME_WITH_TAG_
+          image: sit722aliceacr.azurecr.io/users_service:staging-b9c65b2
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:

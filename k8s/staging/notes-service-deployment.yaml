@@ -18,7 +18,7 @@ spec:
       containers:
         - name: notes-service-container
           image: sit722aliceacr.azurecr.io/_IMAGE_NAME_WITH_TAG_
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
@@ -57,6 +57,13 @@ spec:
                 secretKeyRef:
                   name: notes-secrets
                   key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
