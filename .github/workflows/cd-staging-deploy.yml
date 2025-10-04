@@ -112,7 +112,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: ./infrastructure/staging
+        working-directory: infrastructure/staging
     
     steps:
       - name: Checkout repository
@@ -174,10 +174,7 @@ jobs:
             --overwrite-existing
       
       - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
-        run: |
-          echo "Creating Namespace..."
-          kubectl apply -f k8s/staging/namespace.yaml
-          
+        run: |          
           echo "Deploying Configmaps & Secrets..."
           kubectl apply -f k8s/staging/configmaps.yaml
           kubectl apply -f k8s/staging/secrets.yaml
@@ -233,12 +230,12 @@ jobs:
   # Cleanup staging environment
   cleanup-staging:
     runs-on: ubuntu-latest
-    needs: [smoke-tests]
+    needs: smoke-tests
     if: always()
     
     defaults:
       run:
-        working-directory: ./infrastructure/staging
+        working-directory: infrastructure/staging
     
     steps:   
       - name: OpenTofu Init
