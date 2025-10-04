@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: staging
+  labels:
+    app: frontend
+spec:
+  replicas: 3 # high availability, load distribution, and rolling update capabilities
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: hd-awesome-devops-frontend:latest
+        imagePullPolicy: Never # Crucial for local testing with Docker Desktop K8s
+        ports:
+        - containerPort: 80 # Nginx runs on port 80 inside the container
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend # Service name matches
+  namespace: staging
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80 # The port the service listens on inside the cluster
+      targetPort: 80 # The port on the Pod (containerPort where Nginx runs)
+  type: LoadBalancer # Exposes the service on a port on each Node's IP

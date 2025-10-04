@@ -3,6 +3,7 @@
 # Exit immediately if any command fails
 set -e
 
+echo "Current environment: $ENVIRONMENT"
 echo "Waiting for LoadBalancer IPs to be assigned (up to 5 minutes)..."
 NOTES_IP=""
 USERS_IP=""
@@ -12,11 +13,11 @@ USERS_PORT=""
 
 for i in $(seq 1 60); do
   echo "Attempt $i/60 to get IPs..."
-  NOTES_IP=$(kubectl get service notes-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  NOTES_PORT=$(kubectl get service notes-service -o jsonpath='{.spec.ports[0].port}')
+  NOTES_IP=$(kubectl get service notes-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
+  NOTES_PORT=$(kubectl get service notes-service -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
   
-  USERS_IP=$(kubectl get service users-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  USERS_PORT=$(kubectl get service users-service -o jsonpath='{.spec.ports[0].port}')
+  USERS_IP=$(kubectl get service users-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
+  USERS_PORT=$(kubectl get service users-service -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
 
   if [[ -n "$NOTES_IP" && -n "$NOTES_PORT" && -n "$USERS_IP" && -n "$USERS_PORT" ]]; then
     echo "All backend LoadBalancer IPs assigned!"
