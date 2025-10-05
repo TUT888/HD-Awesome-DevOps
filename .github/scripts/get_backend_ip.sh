@@ -11,8 +11,8 @@ USERS_IP=""
 NOTES_PORT=""
 USERS_PORT=""
 
-for i in $(seq 1 60); do
-  echo "Attempt $i/60 to get IPs..."
+for i in $(seq 1 10); do
+  echo "Attempt $i/10 to get IPs..."
   NOTES_IP=$(kubectl get service notes-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
   NOTES_PORT=$(kubectl get service notes-service -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
   
