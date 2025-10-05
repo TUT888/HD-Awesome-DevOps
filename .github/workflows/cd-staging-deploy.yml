@@ -5,10 +5,11 @@ on:
   workflow_dispatch:
 
 
-  # Run the workflow when the new PR to develop is approved and merged
+  # Run the workflow when the new PR to develop or main is approved and merged
   push:
     branches:
       - develop
+      - main
     paths:
       - "backend/**"
       - "frontend/**"

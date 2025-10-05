@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-service
+  namespace: staging
+  labels:
+    app: notes-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-service
+  template:
+    metadata:
+      labels:
+        app: notes-service
+    spec:
+      containers:
+        - name: notes-service-container
+          image: _IMAGE_NAME_WITH_TAG_ # Placeholder for sit722aliceacr.azurecr.io/users_service:<tag-name>
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: notes-config
+                  key: NOTES_DB_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: notes-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: notes-config
+                  key: NOTES_DB_NAME
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: notes-config
+                  key: ENVIRONMENT
+            - name: USERS_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: notes-config
+                  key: USERS_SERVICE_URL
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: notes-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: notes-secrets
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-service
+  namespace: staging
+  labels:
+    app: notes-service
+spec:
+  selector:
+    app: notes-service
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 8000
+  type: LoadBalancer

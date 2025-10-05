@@ -12,10 +12,11 @@ on:
       - "playwright-python/**"
       - ".github/workflows/*acceptance*.yml"
 
-  # Run the test when the new PR to develop is created
+  # Run the test when the new PR to develop or main is created
   pull_request:
     branches:
       - develop
+      - main
     paths:
       - 'backend/**'
       - 'frontend/**'

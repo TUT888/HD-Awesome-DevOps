@@ -14,9 +14,10 @@ on:
       - ".github/workflows/*notes_service*.yml"
   
   # Re-run the test when the new PR to develop is created
-  # pull_request:
-  #   branches:
-  #     - "develop"
+  pull_request:
+    branches:
+      - develop
+      - main
 
 jobs:
   quality-checks:
