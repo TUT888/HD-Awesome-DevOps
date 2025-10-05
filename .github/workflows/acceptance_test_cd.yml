@@ -4,32 +4,32 @@ on:
   # Manual trigger
   workflow_dispatch:
 
+  push:
+    branches:
+      - "feature/*staging*"
+      - "fix/*staging*"
+    paths: 
+      - "playwright-python/**"
+      - ".github/workflows/*acceptance*.yml"
+
   # Run the test when the new PR to develop is created
-  # pull_request:
-  #   branches:
-  #     - develop
-  #   paths:
-  #     - 'backend/**'
-  #     - 'frontend/**'
-  #     - 'k8s/staging/**'
-  #     - 'infrastructure/staging/**'
-  #     - '.github/workflows/*staging*.yml'
-  
-  workflow_call:
-    inputs:
-      frontend_url:
-        required: true
-        type: string
-      product_service_url:
-        required: true
-        type: string
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'k8s/staging/**'
+      - 'infrastructure/staging/**'
+      - '.github/workflows/*staging*.yml'
 
 env:
   PYTHON_VERSION: "3.10"
+  FRONTEND_URL: http://localhost:3000
+  USERS_SERVICE_URL: http://localhost:5000
+  NOTES_SERVICE_URL: http://localhost:5001
 
 jobs:
-  # Test Individual Services (Already triggered on feature_test workflows)
-
   # Acceptance Tests (End-to-End)
   acceptance-tests:
     name: Acceptance Tests - End-to-end user flow
@@ -52,23 +52,25 @@ jobs:
       - name: Wait for services to be ready
         run: |
           echo "Waiting for services to start..."
-          timeout 60 bash -c 'until curl -s http://localhost:5000/health > /dev/null; do sleep 2; done'
-          timeout 60 bash -c 'until curl -s http://localhost:5001/health > /dev/null; do sleep 2; done'
-          timeout 60 bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -s ${{ env.USERS_SERVICE_URL }}/health > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -s ${{ env.NOTES_SERVICE_URL }}/health > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -s ${{ env.FRONTEND_URL }} > /dev/null; do sleep 2; done'
           echo "Services are ready!"
       
       - name: Install Playwright
         run: |
-          cd ./playwright-python
           echo "Installing Playwright..."
           pip install pytest-playwright
           playwright install
-          pip install -r requirements.txt
+          pip install -r ./playwright-python/requirements.txt
 
       - name: Run acceptance tests
+        env:
+          FRONTEND_URL: ${{ env.FRONTEND_URL }}
+          USERS_SERVICE_URL: ${{ env.USERS_SERVICE_URL }}
+          NOTES_SERVICE_URL: ${{ env.NOTES_SERVICE_URL }}
         run: |
           echo "Runing acceptance tests with Playwright..."
-          cd ./playwright-python
           pytest ./playwright-python/tests/test_acceptance.py -v
           
       - name: Stop services

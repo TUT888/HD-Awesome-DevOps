@@ -136,27 +136,27 @@ jobs:
         run: |
           echo "Setting up infrastructure with OpenTofu"
 
-      # - name: Setup OpenTofu
-      #   uses: opentofu/setup-opentofu@v1
-      #   with:
-      #     tofu_version: '1.6.0'
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: '1.6.0'
       
-      # - name: Log in to Azure
-      #   uses: azure/login@v1
-      #   with:
-      #     creds: {{ secrets.AZURE_CREDENTIALS }}
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      # - name: OpenTofu Init
-      #   run: tofu init
+      - name: OpenTofu Init
+        run: tofu init
       
-      # - name: OpenTofu Plan
-      #   run: |
-      #     tofu plan \
-      #       -var="git_sha={{ github.sha }}" \
-      #       -out=staging.tfplan
+      - name: OpenTofu Plan
+        run: |
+          tofu plan \
+            -var="git_sha={{ github.sha }}" \
+            -out=staging.tfplan
       
-      # - name: OpenTofu Apply
-      #   run: tofu apply -auto-approve staging.tfplan
+      - name: OpenTofu Apply
+        run: tofu apply -auto-approve staging.tfplan
 
   # Deploy services to staging AKS
   deploy-to-staging:
@@ -241,6 +241,10 @@ jobs:
           echo "Updating image tag in deployment manifest..."
           sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.FRONTEND_IMAGE }}|g" k8s/staging/frontend-deployment.yaml
 
+          # Student Subscription only allow 2 public IP address, so as a demo, I remove the notes service
+          kubectl delete -f k8s/staging/notes-service-deployment.yaml
+
+          # Apply frontend deployment
           echo "Deploying frontend to AKS..."
           kubectl apply -f k8s/staging/frontend-deployment.yaml
       
@@ -317,18 +321,20 @@ jobs:
     steps:   
       - name: Checkout repository
         uses: actions/checkout@v4
-        
-      - name: OpenTofu Init
-        run: |
-          echo "Init OpenTofu..."
       
-      - name: OpenTofu Destroy
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+
+      - name: Delete staging environment
         run: |
-          echo "Destroying staging infrastructure..."
+          az group delete \
+            --name ${{ env.RESOURCE_GROUP_STAGING }} \
+            --yes \
+            --no-wait
+            
+      - name: Logout from Azure
+        run: az logout
       
-      - name: Deployment summary
-        if: success()
-        run: |
-          echo "Staging deployment successful!"
-          echo "Smoke tests passed!"
-          echo "Staging environment cleaned up!"
