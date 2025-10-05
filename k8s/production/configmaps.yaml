@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: notes-config
-  namespace: staging
+  namespace: production
 data:
   # Database Configuration
   NOTES_DB_HOST: notes-db-service
@@ -20,5 +20,5 @@ data:
   USERS_SERVICE_URL: http://users-service:5000
   
   # Application Configuration
-  ENVIRONMENT: staging
+  ENVIRONMENT: production
   LOG_LEVEL: debug

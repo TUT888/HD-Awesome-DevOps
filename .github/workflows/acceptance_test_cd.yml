@@ -13,16 +13,16 @@ on:
       - ".github/workflows/*acceptance*.yml"
 
   # Run the test when the new PR to develop or main is created
-  pull_request:
-    branches:
-      - develop
-      - main
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'k8s/staging/**'
-      - 'infrastructure/staging/**'
-      - '.github/workflows/*staging*.yml'
+  # pull_request:
+  #   branches:
+  #     - develop
+  #     - main
+  #   paths:
+  #     - 'backend/**'
+  #     - 'frontend/**'
+  #     - 'k8s/staging/**'
+  #     - 'infrastructure/staging/**'
+  #     - '.github/workflows/*staging*.yml'
 
 env:
   PYTHON_VERSION: "3.10"

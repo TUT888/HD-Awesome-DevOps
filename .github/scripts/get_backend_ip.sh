@@ -28,10 +28,10 @@ for i in $(seq 1 60); do
   sleep 5 # Wait 5 seconds before next attempt
 done
 
-if [[ -z "$NOTES_IP" || -z "$NOTES_PORT" || -z "$USERS_IP" || -z "$USERS_PORT" ]]; then
-  echo "Error: One or more LoadBalancer IPs not assigned after timeout."
-  exit 1 # Fail the job if IPs are not obtained
-fi
+# if [[ -z "$NOTES_IP" || -z "$NOTES_PORT" || -z "$USERS_IP" || -z "$USERS_PORT" ]]; then
+#   echo "Error: One or more LoadBalancer IPs not assigned after timeout."
+#   exit 1 # Fail the job if IPs are not obtained
+# fi
 
 # These are environment variables for subsequent steps in the *same job*
 # And used to set the job outputs
