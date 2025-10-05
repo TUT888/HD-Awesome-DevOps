@@ -339,19 +339,19 @@ jobs:
         run: |
           echo "Cleaning up staging"
       
-      # - name: Log in to Azure
-      #   uses: azure/login@v1
-      #   with:
-      #     creds: {{ secrets.AZURE_CREDENTIALS }}
-      #     enable-AzPSSession: true
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
 
-      # - name: Delete staging environment
-      #   run: |
-      #     az group delete \
-      #       --name {{ env.RESOURCE_GROUP_STAGING }} \
-      #       --yes \
-      #       --no-wait
+      - name: Delete staging environment
+        run: |
+          az group delete \
+            --name {{ env.RESOURCE_GROUP_STAGING }} \
+            --yes \
+            --no-wait
             
-      # - name: Logout from Azure
-      #   run: az logout
+      - name: Logout from Azure
+        run: az logout
       

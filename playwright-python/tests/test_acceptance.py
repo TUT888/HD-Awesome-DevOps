@@ -18,7 +18,7 @@ def browser_context_args(browser_context_args):
         "ignore_https_errors": True,
     }
 
-@pytest.mark.smoke
+@pytest.mark.acceptance
 class TestEndToEndUserFlow:
     """Acceptance testing to verify correct end-to-end user flow."""
     

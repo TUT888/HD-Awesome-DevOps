@@ -68,9 +68,12 @@ jobs:
           FRONTEND_IMAGE="frontend:${{ steps.vars.outputs.IMAGE_TAG }}"
 
           # Semantic version images
-          NOTES_SERVICE_IMAGE_VERSION="notes_service:${{ inputs.version }}"
-          USERS_SERVICE_IMAGE_VERSION="users_service:${{ inputs.version }}"
-          FRONTEND_IMAGE_VERSION="frontend:${{ inputs.version }}"
+          VERSION=${{ inputs.version }}
+          if [[ -z "$VERSION" ]]; then
+            VERSION=latest
+          NOTES_SERVICE_IMAGE_VERSION="notes_service:$VERSION"
+          USERS_SERVICE_IMAGE_VERSION="users_service:$VERSION"
+          FRONTEND_IMAGE_VERSION="frontend:$VERSION"
 
           # Build local images for scanning
           docker build -t $NOTES_SERVICE_IMAGE -t $NOTES_SERVICE_IMAGE_VERSION ./backend/notes_service
