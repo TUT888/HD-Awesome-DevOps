@@ -21,14 +21,14 @@ spec:
         imagePullPolicy: Always
         ports:
           - containerPort: 80 # Nginx runs on port 80 inside the container
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
       restartPolicy: Always
-      resources:
-        requests:
-          memory: "256Mi"
-          cpu: "250m"
-        limits:
-          memory: "512Mi"
-          cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
