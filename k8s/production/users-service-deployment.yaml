@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: users-service # Deployment name matches
-  namespace: staging
+  namespace: production
   labels:
     app: users-service
 spec:
@@ -64,7 +64,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: users-service
-  namespace: staging
+  namespace: production
   labels:
     app: users-service
 spec:
