@@ -19,19 +19,26 @@ for i in $(seq 1 10); do
   USERS_IP=$(kubectl get service users-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
   USERS_PORT=$(kubectl get service users-service -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
 
-  if [[ -n "$NOTES_IP" && -n "$NOTES_PORT" && -n "$USERS_IP" && -n "$USERS_PORT" ]]; then
-    echo "All backend LoadBalancer IPs assigned!"
+  if [[ -n "$NOTES_IP" && -n "$NOTES_PORT" ]]; then
+    echo "Note Service LoadBalancer IPs assigned!"
+    echo "NOTE Service IP: $NOTES_IP:$NOTES_PORT"
+    break
+  fi
+  
+  if [[ -n "$USERS_IP" && -n "$USERS_PORT" ]]; then
+    echo "User Service LoadBalancer IPs assigned!"
     echo "NOTE Service IP: $NOTES_IP:$NOTES_PORT"
     echo "USER Service IP: $USERS_IP:$USERS_PORT"
     break
   fi
+
   sleep 5 # Wait 5 seconds before next attempt
 done
 
-# if [[ -z "$NOTES_IP" || -z "$NOTES_PORT" || -z "$USERS_IP" || -z "$USERS_PORT" ]]; then
-#   echo "Error: One or more LoadBalancer IPs not assigned after timeout."
-#   exit 1 # Fail the job if IPs are not obtained
-# fi
+if [[ -z "$NOTES_IP" || -z "$NOTES_PORT" || -z "$USERS_IP" || -z "$USERS_PORT" ]]; then
+  echo "Error: One or more LoadBalancer IPs not assigned after timeout."
+  exit 1 # Fail the job if IPs are not obtained
+fi
 
 # These are environment variables for subsequent steps in the *same job*
 # And used to set the job outputs
