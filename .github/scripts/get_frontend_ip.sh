@@ -10,8 +10,8 @@ FRONTEND_PORT=""
 
 for i in $(seq 1 60); do
   echo "Attempt $i/60 to get IPs..."
-  FRONTEND_IP=$(kubectl get service frontend-w10 -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
-  FRONTEND_PORT=$(kubectl get service frontend-w10 -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
+  FRONTEND_IP=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
+  FRONTEND_PORT=$(kubectl get service frontend -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
 
   if [[ -n "$FRONTEND_IP" && -n "$FRONTEND_PORT" ]]; then
     echo "Frontend LoadBalancer IP assigned!"
