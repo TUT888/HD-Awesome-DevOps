@@ -100,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let url = `${NOTES_API_BASE_URL}/notes/`;
             if (userId) {
                 url += `?user_id=${userId}`;
+            } else {
+                url += `?user_id=0`;
             }
 
             const response = await fetch(url);
