@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-config
+  namespace: production
+data:
+  # Database Configuration
+  NOTES_DB_HOST: notes-db-service
+  NOTES_DB_NAME: notes
+
+  USERS_DB_HOST: users-db-service
+  USERS_DB_NAME: users
+
+  # POSTGRES_DB: notesdb
+  # POSTGRES_HOST: postgres-service
+  POSTGRES_PORT: "5432"
+  
+  # Service URLs (internal cluster communication)
+  NOTES_SERVICE_URL: http://notes-service:5001
+  USERS_SERVICE_URL: http://users-service:5000
+  
+  # Application Configuration
+  ENVIRONMENT: production
+  LOG_LEVEL: debug

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres-notes:
+    image: postgres:15-alpine
+    container_name: postgres-notes
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=notes
+    ports:
+      - "5532:5432"
+    volumes:
+      - notes_db_data:/var/lib/postgresql/data
+
+  notes-service:
+    build: ./backend/notes_service
+    ports:
+      - "5001:8000"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=notes
+      - POSTGRES_HOST=postgres-notes
+      - POSTGRES_PORT=5432
+    depends_on:
+      - postgres-notes
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend/notes_service/app:/code/app
+
+  postgres-users:
+    image: postgres:15-alpine
+    container_name: postgres-users
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=users
+    ports:
+      - "5533:5432"  # Different host port to avoid conflict
+    volumes:
+      - users_db_data:/var/lib/postgresql/data
+
+  users-service:
+    build: ./backend/users_service
+    ports:
+      - "5000:8000"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=users
+      - POSTGRES_HOST=postgres-users
+      - POSTGRES_PORT=5432
+    depends_on:
+      - postgres-users
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend/users_service/app:/code/app
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - notes-service
+      - users-service
+  
+
+# Persistent Volume
+volumes:
+  notes_db_data:
+  users_db_data:

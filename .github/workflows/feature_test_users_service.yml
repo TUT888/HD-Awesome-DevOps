@@ -1,0 +1,37 @@
+name: Feature Branch CI - User Service
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    
+  # Workflow runs on any changes on Users Service, commited on feature or fix branches
+  push:
+    branches:
+      - "feature/**"
+      - "fix/**"
+    paths: 
+      - "backend/users_service/**"
+      - ".github/workflows/*users_service*.yml"
+  
+  # Re-run the test when the new PR to develop is created
+  # pull_request:
+  #   branches:
+  #     - develop
+  #     - main
+
+jobs:
+  quality-checks:
+    name: Quality Check for Users Service
+    uses: ./.github/workflows/_reusable_quality_check_workflow.yml
+    secrets: inherit
+    with:
+      working-directory: "./backend/users_service"
+      linting-threshold: 8.0
+
+  test:
+    name: Run Tests for Notes Service
+    uses: ./.github/workflows/_reusable_test_workflow.yml
+    secrets: inherit
+    with:
+      working-directory: "./backend/users_service"
+      coverage-threshold: 80

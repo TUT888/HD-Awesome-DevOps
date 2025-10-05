@@ -1,0 +1,357 @@
+name: Develop Branch CD - Deploy to Staging Environment
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+
+  # Run the workflow when the new PR to develop is approved and merged
+  push:
+    branches:
+      - develop
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "k8s/staging/**"
+      - ".github/workflows/**"
+      - "infrastructure/staging/**"
+
+env:
+  SHARED_ACR_LOGIN_SERVER: ${{ secrets.SHARED_ACR_LOGIN_SERVER }}
+  SHARED_ACR_NAME: ${{ secrets.SHARED_ACR_NAME }}
+
+  RESOURCE_GROUP_STAGING: sit722alicestd-staging-rg
+  AKS_CLUSTER_STAGING: sit722alicestd-staging-aks
+  AZURE_LOCATION: australiaeast
+
+  # Image Scan with Trivy
+  # 1: Fail the build, stop the job if vulnerabilities found
+  # 0: Don't fail the build, just report security scan result (for learning purpose, I'll use this option)
+  IMAGE_SECURITY_GATE: 0
+
+jobs:
+  # Build images
+  build-images:
+    name: Build and Scan images for all services
+    runs-on: ubuntu-latest
+    
+    outputs:
+      GIT_SHA: ${{ steps.vars.outputs.GIT_SHA }}
+      IMAGE_TAG: ${{ steps.vars.outputs.IMAGE_TAG }}
+      NOTES_SERVICE_IMAGE: ${{ steps.output_images.outputs.notes_service_image }}
+      USERS_SERVICE_IMAGE: ${{ steps.output_images.outputs.users_service_image }}
+      FRONTEND_IMAGE: ${{ steps.output_images.outputs.frontend_image }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+      
+      # Get image tag with Git SHA, start building and scanning images
+      - name: Set variables (Short Git SHA and Image tag)
+        id: vars
+        run: |
+          echo "GIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=staging-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      # Start building images
+      - name: Build Images
+        run: |
+          # Set image name based on Git SHA
+          NOTES_SERVICE_IMAGE="notes_service:${{ steps.vars.outputs.IMAGE_TAG }}"
+          USERS_SERVICE_IMAGE="users_service:${{ steps.vars.outputs.IMAGE_TAG }}"
+          FRONTEND_IMAGE="frontend:${{ steps.vars.outputs.IMAGE_TAG }}"
+
+          # Build local images for scanning
+          docker build -t $NOTES_SERVICE_IMAGE ./backend/notes_service
+          docker build -t $USERS_SERVICE_IMAGE ./backend/users_service
+          docker build -t $FRONTEND_IMAGE ./frontend
+
+          # Set image names as GitHub env variables, allowing internal reference within the same job
+          echo "NOTES_SERVICE_IMAGE=$NOTES_SERVICE_IMAGE" >> $GITHUB_ENV
+          echo "USERS_SERVICE_IMAGE=$USERS_SERVICE_IMAGE" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE=$FRONTEND_IMAGE" >> $GITHUB_ENV
+
+      # Scan images with Trivy
+      - name: Scan Images
+        run: |
+          echo "Scanning Notes Service Image: ${{ env.NOTES_SERVICE_IMAGE }}..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code ${{ env.IMAGE_SECURITY_GATE }} \
+            ${{ env.NOTES_SERVICE_IMAGE }}
+
+          echo "Scanning Users Service Image: ${{ env.USERS_SERVICE_IMAGE }}..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code ${{ env.IMAGE_SECURITY_GATE }} \
+            ${{ env.USERS_SERVICE_IMAGE }}
+
+          echo "Scanning Frontend Image: ${{ env.FRONTEND_IMAGE }}..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code ${{ env.IMAGE_SECURITY_GATE }} \
+            ${{ env.FRONTEND_IMAGE }}
+          
+      # All check passed, start pushing images to ACR
+      - name: Log in to ACR
+        run: |
+          az acr login --name ${{ env.SHARED_ACR_LOGIN_SERVER }}
+
+      - name: Tag and Push Images
+        id: output_images
+        run: |
+          # Tag images
+          docker tag $NOTES_SERVICE_IMAGE ${{ env.SHARED_ACR_LOGIN_SERVER }}/$NOTES_SERVICE_IMAGE
+          docker tag $USERS_SERVICE_IMAGE ${{ env.SHARED_ACR_LOGIN_SERVER }}/$USERS_SERVICE_IMAGE
+          docker tag $FRONTEND_IMAGE ${{ env.SHARED_ACR_LOGIN_SERVER }}/$FRONTEND_IMAGE
+
+          # Push images
+          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/$NOTES_SERVICE_IMAGE
+          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/$USERS_SERVICE_IMAGE
+          docker push ${{ env.SHARED_ACR_LOGIN_SERVER }}/$FRONTEND_IMAGE
+
+          # Export image name (with tag) as output
+          echo "notes_service_image=$NOTES_SERVICE_IMAGE" >> $GITHUB_OUTPUT
+          echo "users_service_image=$USERS_SERVICE_IMAGE" >> $GITHUB_OUTPUT
+          echo "frontend_image=$FRONTEND_IMAGE" >> $GITHUB_OUTPUT
+
+  # Provision staging infrastructure with OpenTofu
+  provision-infrastructure:
+    name: Provision staging infrastructure with OpenTofu
+    runs-on: ubuntu-latest
+    needs: build-images
+    
+    defaults:
+      run:
+        working-directory: ./infrastructure/staging
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup OpenTofu
+        run: |
+          echo "Setting up infrastructure with OpenTofu"
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: '1.6.0'
+      
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: OpenTofu Init
+        run: tofu init
+      
+      - name: OpenTofu Plan
+        run: |
+          tofu plan \
+            -var="git_sha={{ github.sha }}" \
+            -out=staging.tfplan
+      
+      - name: OpenTofu Apply
+        run: tofu apply -auto-approve staging.tfplan
+
+  # Deploy services to staging AKS
+  deploy-to-staging:
+    name: Deploy to staging environment
+    runs-on: ubuntu-latest
+    needs: [build-images, provision-infrastructure]
+    
+    outputs:
+      NOTES_SERVICE_IP: ${{ steps.get_backend_ips.outputs.notes_ip }}
+      NOTES_SERVICE_PORT: ${{ steps.get_backend_ips.outputs.notes_port }}
+      USERS_SERVICE_IP: ${{ steps.get_backend_ips.outputs.users_ip }}
+      USERS_SERVICE_PORT: ${{ steps.get_backend_ips.outputs.users_port }}
+      FRONTEND_IP: ${{ steps.get_frontend_ip.outputs.frontend_ip }}
+      FRONTEND_PORT: ${{ steps.get_frontend_ip.outputs.frontend_port }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+      
+      - name: Set Kubernetes context (get AKS credentials)
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.RESOURCE_GROUP_STAGING }} \
+            --name ${{ env.AKS_CLUSTER_STAGING }} \
+            --overwrite-existing
+      
+      - name: Deploy Backend Infrastructure (ConfigMaps, Secrets, Databases)
+        run: |
+          kubectl apply -f k8s/staging/configmaps.yaml
+          kubectl apply -f k8s/staging/secrets.yaml
+          kubectl apply -f k8s/staging/notes-db-deployment.yaml
+          kubectl apply -f k8s/staging/users-db-deployment.yaml
+      
+      - name: Deploy Backend Microservices
+        run: |
+          # Update image tag in deployment manifest, using the specific git SHA version 
+          echo "Updating image tag in deployment manifest..."
+          sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.NOTES_SERVICE_IMAGE }}|g" k8s/staging/notes-service-deployment.yaml
+          sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.USERS_SERVICE_IMAGE }}|g" k8s/staging/users-service-deployment.yaml
+
+          echo "Deploying backend services to AKS..."
+          kubectl apply -f k8s/staging/users-service-deployment.yaml
+          kubectl apply -f k8s/staging/notes-service-deployment.yaml
+
+      - name: Wait for Backend LoadBalancer IPs
+        env:
+          ENVIRONMENT: staging
+        run: |
+          # chmod +x .github/scripts/get_backend_ip.sh
+          # ./.github/scripts/get_backend_ip.sh
+          
+          echo "Assigning sample IP..."
+          echo "NOTES_IP=https://www.google.com/" >> $GITHUB_ENV
+          echo "NOTES_PORT=" >> $GITHUB_ENV  
+          echo "USERS_IP=https://www.google.com/" >> $GITHUB_ENV
+          echo "USERS_PORT=" >> $GITHUB_ENV  
+
+      - name: Capture Backend IPs for Workflow Output
+        id: get_backend_ips
+        run: |
+          echo "notes_ip=${{ env.NOTES_IP }}" >> $GITHUB_OUTPUT
+          echo "notes_port=${{ env.NOTES_PORT }}" >> $GITHUB_OUTPUT
+          echo "users_ip=${{ env.USERS_IP }}" >> $GITHUB_OUTPUT
+          echo "users_port=${{ env.USERS_PORT }}" >> $GITHUB_OUTPUT
+      
+      # Frontend
+      - name: Inject Backend IPs into Frontend main.js
+        run: |
+          echo "Injecting IPs into frontend/static/js/main.js"
+          # Ensure frontend/main.js is directly in the path for sed
+          sed -i "s|http://localhost:5000|http://${{ env.NOTES_IP }}:${{ env.NOTES_PORT }}|g" frontend/main.js
+          sed -i "s|http://localhost:5001|http://${{ env.USERS_IP }}:${{ env.USERS_PORT }}|g" frontend/main.js
+          
+          # Display the modified file content for debugging
+          echo "--- Modified main.js content ---"
+          cat frontend/main.js
+          echo "---------------------------------"
+
+      - name: Deploy Frontend to AKS
+        run: |
+          # Update image tag in deployment manifest, using the specific git SHA version 
+          echo "Updating image tag in deployment manifest..."
+          sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.FRONTEND_IMAGE }}|g" k8s/staging/frontend-deployment.yaml
+
+          # Apply frontend deployment
+          echo "Deploying frontend to AKS..."
+          kubectl apply -f k8s/staging/frontend-deployment.yaml
+      
+      - name: Wait for Frontend LoadBalancer IP
+        env:
+          ENVIRONMENT: staging
+        run: |
+          # chmod +x .github/scripts/get_frontend_ip.sh
+          # ./.github/scripts/get_frontend_ip.sh
+          
+          echo "Assigning sample IP..."
+          echo "FRONTEND_IP=https://www.google.com/" >> $GITHUB_ENV
+          echo "FRONTEND_PORT=" >> $GITHUB_ENV  
+
+      - name: Capture Frontend IP for Workflow Output
+        id: get_frontend_ip
+        run: |
+          echo "frontend_ip=${{ env.FRONTEND_IP }}" >> $GITHUB_OUTPUT
+          echo "frontend_port=${{ env.FRONTEND_PORT }}" >> $GITHUB_OUTPUT
+
+  backend-smoke-tests:
+    name: Backend smoke tests
+    runs-on: ubuntu-latest
+    needs: deploy-to-staging
+    
+    strategy:
+      matrix:
+        service:
+          - name: notes_service
+            external_ip: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}
+            service_port: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }}
+            expected_output: "Welcome to the Notes Service!"
+          - name: users_service
+            external_ip: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}
+            service_port: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }}
+            expected_output: "Welcome to the Users Service!"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Backend Smoke Tests
+        env:
+          TEST_IP: ${{ matrix.service.external_ip }}
+          TEST_PORT: ${{ matrix.service.service_port }}
+          EXPECTED_MESSAGE: ${{ matrix.service.expected_output }}
+        run: |
+          # chmod +x .github/scripts/backend_smoke_tests.sh
+          # ./.github/scripts/backend_smoke_tests.sh
+
+          echo "Running sample smoke tests..."
+          echo "Done!"
+
+  frontend-smoke-tests:
+    name: Frontend smoke tests
+    runs-on: ubuntu-latest
+    needs: deploy-to-staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Backend Smoke Tests
+        env:
+          TEST_IP: ${{ needs.deploy-to-staging.outputs.FRONTEND_IP }}
+          TEST_PORT: ${{ needs.deploy-to-staging.outputs.FRONTEND_PORT }}
+        run: |
+          # chmod +x .github/scripts/frontend_smoke_tests.sh
+          # ./.github/scripts/frontend_smoke_tests.sh
+          
+          echo "Running sample smoke tests..."
+          echo "Done!"
+
+  # Cleanup staging environment
+  cleanup-staging:
+    runs-on: ubuntu-latest
+    needs: [backend-smoke-tests, frontend-smoke-tests]
+    if: always()
+    
+    defaults:
+      run:
+        working-directory: ./infrastructure/staging
+    
+    steps:   
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Cleaning up staging environment
+        run: |
+          echo "Cleaning up staging"
+      
+      # - name: Log in to Azure
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: {{ secrets.AZURE_CREDENTIALS }}
+      #     enable-AzPSSession: true
+
+      # - name: Delete staging environment
+      #   run: |
+      #     az group delete \
+      #       --name {{ env.RESOURCE_GROUP_STAGING }} \
+      #       --yes \
+      #       --no-wait
+            
+      # - name: Logout from Azure
+      #   run: az logout
+      

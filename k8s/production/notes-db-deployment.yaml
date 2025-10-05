@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-db-deployment
+  namespace: production
+  labels:
+    app: notes-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-db
+  template:
+    metadata:
+      labels:
+        app: notes-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine # Use the same PosgreSQL image as in Docker Compose
+        ports:
+        - containerPort: 5432 # Default PosgreSQL port
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: notes-config # ConfigMap name matches
+              key: NOTES_DB_NAME # Point to the database name
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: notes-secrets # Secret name matches
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: notes-secrets # Secret name matches
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-db-service # Internal DNS name for the Order DB
+  namespace: production
+  labels:
+    app: notes-db
+spec:
+  selector:
+    app: notes-db # Selects pods with the label app
+  ports:
+    - protocol: TCP
+      port: 5432 # The port the service listens on (default PosgreSQL)
+      targetPort: 5432 # The port on the Pod (containerPort)
+  type: ClusterIP # Only accessible from within the cluster

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: staging
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend-container
+        image: _IMAGE_NAME_WITH_TAG_ # Placeholder for sit722aliceacr.azurecr.io/users_service:<tag-name>
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 80 # Nginx runs on port 80 inside the container
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend # Service name matches
+  namespace: staging
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80 # The port the service listens on inside the cluster
+      targetPort: 80 # The port on the Pod (containerPort where Nginx runs)
+  type: LoadBalancer # Exposes the service on a port on each Node's IP

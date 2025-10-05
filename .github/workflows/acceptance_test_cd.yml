@@ -1,0 +1,80 @@
+name: CD - Staging Tests on PR
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+  push:
+    branches:
+      - "feature/*staging*"
+      - "fix/*staging*"
+    paths: 
+      - "playwright-python/**"
+      - ".github/workflows/*acceptance*.yml"
+
+  # Run the test when the new PR to develop or main is created
+  # pull_request:
+  #   branches:
+  #     - develop
+  #     - main
+  #   paths:
+  #     - 'backend/**'
+  #     - 'frontend/**'
+  #     - 'k8s/staging/**'
+  #     - 'infrastructure/staging/**'
+  #     - '.github/workflows/*staging*.yml'
+
+env:
+  PYTHON_VERSION: "3.10"
+  FRONTEND_URL: http://localhost:3000
+  USERS_SERVICE_URL: http://localhost:5000
+  NOTES_SERVICE_URL: http://localhost:5001
+
+jobs:
+  # Acceptance Tests (End-to-End)
+  acceptance-tests:
+    name: Acceptance Tests - End-to-end user flow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+        
+      - name: Start services with Docker Compose
+        run: |
+          docker compose build --no-cache
+          docker compose up -d
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          timeout 60 bash -c 'until curl -s ${{ env.USERS_SERVICE_URL }}/health > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -s ${{ env.NOTES_SERVICE_URL }}/health > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -s ${{ env.FRONTEND_URL }} > /dev/null; do sleep 2; done'
+          echo "Services are ready!"
+      
+      - name: Install Playwright
+        run: |
+          echo "Installing Playwright..."
+          pip install pytest-playwright
+          playwright install
+          pip install -r ./playwright-python/requirements.txt
+
+      - name: Run acceptance tests
+        env:
+          FRONTEND_URL: ${{ env.FRONTEND_URL }}
+          USERS_SERVICE_URL: ${{ env.USERS_SERVICE_URL }}
+          NOTES_SERVICE_URL: ${{ env.NOTES_SERVICE_URL }}
+        run: |
+          echo "Runing acceptance tests with Playwright..."
+          pytest ./playwright-python/tests/test_acceptance.py -v
+          
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down -v

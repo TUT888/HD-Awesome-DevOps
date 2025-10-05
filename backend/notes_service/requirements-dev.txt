@@ -1,0 +1,18 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-multipart
+pydantic
+azure-storage-blob
+aio-pika
+
+# Testing and coverage report
+pytest
+pytest-cov
+httpx 
+
+# Code quality
+black # Linting & format code
+pylint # Code quality
+bandit # Security linting
