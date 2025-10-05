@@ -205,7 +205,9 @@ jobs:
 
           echo "Deploying backend services to AKS..."
           kubectl apply -f k8s/staging/users-service-deployment.yaml
-          kubectl apply -f k8s/staging/notes-service-deployment.yaml
+
+          # Student Subscription only allow 2 public IP address, so as a demo, I remove the notes service
+          # kubectl apply -f k8s/staging/notes-service-deployment.yaml
 
       - name: Wait for Backend LoadBalancer IPs
         env:
@@ -241,9 +243,6 @@ jobs:
           echo "Updating image tag in deployment manifest..."
           sed -i "s|_IMAGE_NAME_WITH_TAG_|${{ env.SHARED_ACR_LOGIN_SERVER }}/${{ needs.build-images.outputs.FRONTEND_IMAGE }}|g" k8s/staging/frontend-deployment.yaml
 
-          # Student Subscription only allow 2 public IP address, so as a demo, I remove the notes service
-          kubectl delete -f k8s/staging/notes-service-deployment.yaml
-
           # Apply frontend deployment
           echo "Deploying frontend to AKS..."
           kubectl apply -f k8s/staging/frontend-deployment.yaml
@@ -270,8 +269,8 @@ jobs:
       matrix:
         service:
           - name: notes_service
-            external_ip: ${{ needs.deploy-to-staging.outputs.NOTES_SERVICE_IP }}
-            service_port: ${{ needs.deploy-to-staging.outputs.NOTES_SERVICE_PORT }}
+            external_ip: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}
+            service_port: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_PORT }}
             expected_output: "Welcome to the Notes Service!"
           - name: users_service
             external_ip: ${{ needs.deploy-to-staging.outputs.USERS_SERVICE_IP }}

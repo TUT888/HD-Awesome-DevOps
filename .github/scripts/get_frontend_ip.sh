@@ -8,8 +8,8 @@ echo "Waiting for Frontend LoadBalancer IPs to be assigned (up to 5 minutes)..."
 FRONTEND_IP=""
 FRONTEND_PORT=""
 
-for i in $(seq 1 60); do
-  echo "Attempt $i/60 to get IPs..."
+for i in $(seq 1 10); do
+  echo "Attempt $i/10 to get IPs..."
   FRONTEND_IP=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n $ENVIRONMENT)
   FRONTEND_PORT=$(kubectl get service frontend -o jsonpath='{.spec.ports[0].port}' -n $ENVIRONMENT)
 

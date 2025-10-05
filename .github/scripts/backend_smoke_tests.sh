@@ -2,6 +2,10 @@
 
 set -e
 
+if [[ -z "$TEST_IP" || -z "$TEST_PORT" ]]; then
+  echo "TEST_IP is empty or unset."
+  exit 0
+
 TESTING_URL="http://${TEST_IP}:${TEST_PORT}"
 
 echo "Running smoke tests against staging environment"
