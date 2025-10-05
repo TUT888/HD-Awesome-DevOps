@@ -133,26 +133,30 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-        with:
-          tofu_version: '1.6.0'
-      
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: OpenTofu Init
-        run: tofu init
-      
-      - name: OpenTofu Plan
         run: |
-          tofu plan \
-            -var="git_sha={{ github.sha }}" \
-            -out=staging.tfplan
+          echo "Setting up infrastructure with OpenTofu"
+
+      # - name: Setup OpenTofu
+      #   uses: opentofu/setup-opentofu@v1
+      #   with:
+      #     tofu_version: '1.6.0'
       
-      - name: OpenTofu Apply
-        run: tofu apply -auto-approve staging.tfplan
+      # - name: Log in to Azure
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: {{ secrets.AZURE_CREDENTIALS }}
+      
+      # - name: OpenTofu Init
+      #   run: tofu init
+      
+      # - name: OpenTofu Plan
+      #   run: |
+      #     tofu plan \
+      #       -var="git_sha={{ github.sha }}" \
+      #       -out=staging.tfplan
+      
+      # - name: OpenTofu Apply
+      #   run: tofu apply -auto-approve staging.tfplan
 
   # Deploy services to staging AKS
   deploy-to-staging:
@@ -241,6 +245,8 @@ jobs:
           kubectl apply -f k8s/staging/frontend-deployment.yaml
       
       - name: Wait for Frontend LoadBalancer IP
+        env:
+          ENVIRONMENT: staging
         run: |
           chmod +x .github/scripts/get_frontend_ip.sh
           ./.github/scripts/get_frontend_ip.sh

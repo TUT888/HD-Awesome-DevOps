@@ -6,7 +6,7 @@ metadata:
   labels:
     app: frontend
 spec:
-  replicas: 3 # high availability, load distribution, and rolling update capabilities
+  replicas: 2 # high availability, load distribution, and rolling update capabilities
   selector:
     matchLabels:
       app: frontend
@@ -23,11 +23,11 @@ spec:
           - containerPort: 80 # Nginx runs on port 80 inside the container
         resources:
           requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
             memory: "256Mi"
             cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
       restartPolicy: Always
 ---
 apiVersion: v1
